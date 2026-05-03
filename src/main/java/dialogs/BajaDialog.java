@@ -96,7 +96,7 @@ public class BajaDialog extends JDialog implements ActionListener {
             if (opcion == JOptionPane.YES_OPTION) {
 
                 try {
-                    boolean ok = empresa.bajaTrabajador(id);
+                    boolean ok = AccesoTrabajador.bajaTrabajador(id);
 
                     if (ok) {
                         JOptionPane.showMessageDialog(this, "Trabajador eliminado");

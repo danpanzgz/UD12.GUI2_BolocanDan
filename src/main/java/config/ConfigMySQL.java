@@ -10,7 +10,7 @@ public class ConfigMySQL {
 
     private static final String DRIVER = "com.mysql.cj.jdbc.Driver";
     private static final String URLBD = "jdbc:mysql://localhost:3306/empresa?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-    private static final String USUARIO = "prompt";
+    private static final String USUARIO = "empresa_dan";
     private static final String CLAVE = "case";
 
     /**
