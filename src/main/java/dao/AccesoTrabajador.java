@@ -11,13 +11,15 @@ import java.util.List;
 
 import config.ConfigMySQL;
 import exceptions.BDException;
-import modelo.Empresa;
 import modelo.Trabajador;
 
 public class AccesoTrabajador {
+
     public static boolean altaTrabajador(Trabajador t) throws BDException {
         String sql = "INSERT INTO empleados (dni, nombre, apellido, direccion, telefono, puesto) VALUES (?, ?, ?, ?, ?, ?)";
-        try (Connection conn = ConfigMySQL.abrirConexion(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+        try (Connection conn = ConfigMySQL.abrirConexion();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, t.getDni());
             pstmt.setString(2, t.getNombre());
@@ -28,23 +30,53 @@ public class AccesoTrabajador {
 
             pstmt.executeUpdate();
             return true;
+
         } catch (SQLException e) {
-        if (e.getErrorCode() == 1062) {
-            return false;
+            if (e.getErrorCode() == 1062) {
+                return false;
+            }
+            throw new BDException("Error al insertar trabajador: " + e.getMessage());
         }
-        throw new BDException("Error al insertar trabajador: " + e.getMessage());
     }
+
+    public static void insertar(ArrayList<Trabajador> trabajadores) throws BDException {
+        for (Trabajador t : trabajadores) {
+            boolean insertado = altaTrabajador(t);
+
+            if (!insertado) {
+                actualizarPorDni(t);
+            }
+        }
+    }
+
+    public static boolean actualizarPorDni(Trabajador t) throws BDException {
+        String sql = "UPDATE empleados SET nombre=?, apellido=?, direccion=?, telefono=?, puesto=? WHERE dni=?";
+
+        try (Connection conn = ConfigMySQL.abrirConexion();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, t.getNombre());
+            pstmt.setString(2, t.getApellidos());
+            pstmt.setString(3, t.getDireccion());
+            pstmt.setString(4, t.getTelefono());
+            pstmt.setString(5, t.getPuesto());
+            pstmt.setString(6, t.getDni());
+
+            return pstmt.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            throw new BDException("Error al actualizar trabajador: " + e.getMessage());
         }
     }
 
     public static boolean bajaTrabajador(int id) throws BDException {
         String sql = "DELETE FROM empleados WHERE id = ?";
-        try (Connection conn = ConfigMySQL.abrirConexion(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+        try (Connection conn = ConfigMySQL.abrirConexion();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setInt(1, id);
-            int filasAfectadas = pstmt.executeUpdate();
-
-            return filasAfectadas > 0;
+            return pstmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
             throw new BDException("Error al eliminar trabajador: " + e.getMessage());
@@ -54,7 +86,8 @@ public class AccesoTrabajador {
     public static boolean modificaTrabajador(Trabajador t) throws BDException {
         String sql = "UPDATE empleados SET dni=?, nombre=?, apellido=?, direccion=?, telefono=?, puesto=? WHERE id=?";
 
-        try (Connection conn = ConfigMySQL.abrirConexion(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = ConfigMySQL.abrirConexion();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, t.getDni());
             pstmt.setString(2, t.getNombre());
@@ -64,13 +97,12 @@ public class AccesoTrabajador {
             pstmt.setString(6, t.getPuesto());
             pstmt.setInt(7, t.getIdentificador());
 
-            int filas = pstmt.executeUpdate();
-            return filas > 0;
+            return pstmt.executeUpdate() > 0;
+
         } catch (SQLException e) {
             throw new BDException("Error al actualizar trabajador: " + e.getMessage());
         }
     }
-
 
     public static String[][] listarTrabajadores() throws BDException {
         List<String[]> lista = new ArrayList<>();
@@ -107,41 +139,30 @@ public class AccesoTrabajador {
         String numeros = dni.substring(0, 8);
         char letra = Character.toUpperCase(dni.charAt(8));
 
-        if (!numeros.matches("\\d+")) {
+        if (!numeros.matches("\\d{8}")) {
             return false;
         }
 
-        // Letras válidas según el módulo 23 del número
         String letrasValidas = "TRWAGMYFPDXBNJZSQVHLCKE";
         int numero = Integer.parseInt(numeros);
         char letraCorrecta = letrasValidas.charAt(numero % 23);
 
         return letra == letraCorrecta;
-
     }
 
     public static boolean validarTelefono(String telefono) {
-        // Elimina espacios y guiones opcionales
-        telefono = telefono.replaceAll("[\\s-]", "");
+        if (telefono == null) {
+            return false;
+        }
 
-        // Expresión regular:
-        // - Opcionalmente empieza con +34
-        // - Luego un 6, 7, 8 o 9 (móviles y fijos)
-        // - Seguido de 8 dígitos
+        telefono = telefono.replaceAll("[\\s-]", "");
         return telefono.matches("^(\\+34)?[6789]\\d{8}$");
     }
 
-    /**
-     * Exporta los trabajadores a un archivo CSV en la ruta especificada
-     *
-     * @param rutaArchivo Ruta completa donde se guardará el archivo CSV
-     * @throws BDException si hay un error al recuperar los trabajadores de la base de datos
-     */
     public static void exportarACSV(String rutaArchivo) throws BDException {
         List<String[]> listaTrabajadores = new ArrayList<>();
         String sql = "SELECT * FROM empleados";
 
-        // Recuperar los trabajadores de la base de datos
         try (Connection conn = ConfigMySQL.abrirConexion();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -157,20 +178,20 @@ public class AccesoTrabajador {
                 fila[6] = rs.getString("puesto");
                 listaTrabajadores.add(fila);
             }
+
         } catch (SQLException e) {
             throw new BDException("Error al listar trabajadores: " + e.getMessage());
         }
 
-        // Exportar los datos a un archivo CSV
         try (FileWriter writer = new FileWriter(rutaArchivo)) {
-            // Escribir encabezado (nombres de las columnas)
             writer.append("Identificador,DNI,Nombre,Apellidos,Dirección,Teléfono,Puesto\n");
 
-            // Escribir los datos de los trabajadores
             for (String[] trabajador : listaTrabajadores) {
                 for (int i = 0; i < trabajador.length; i++) {
                     writer.append(trabajador[i]);
-                    if (i < trabajador.length - 1) writer.append(",");
+                    if (i < trabajador.length - 1) {
+                        writer.append(",");
+                    }
                 }
                 writer.append("\n");
             }
@@ -182,11 +203,8 @@ public class AccesoTrabajador {
 
     public static void exportarTrabajadoresAJSON(String rutaArchivo) throws BDException {
         List<String[]> listaTrabajadores = new ArrayList<>();
-        List<Trabajador> lista = new ArrayList<>();
-
         String sql = "SELECT * FROM empleados";
 
-        // Recuperar los trabajadores de la base de datos
         try (Connection conn = ConfigMySQL.abrirConexion();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -202,15 +220,17 @@ public class AccesoTrabajador {
                 fila[6] = rs.getString("puesto");
                 listaTrabajadores.add(fila);
             }
+
         } catch (SQLException e) {
             throw new BDException("Error al listar trabajadores: " + e.getMessage());
         }
 
-        // Construir JSON manualmente
         StringBuilder json = new StringBuilder();
         json.append("[\n");
+
         for (int i = 0; i < listaTrabajadores.size(); i++) {
             String[] fila = listaTrabajadores.get(i);
+
             json.append("  {\n");
             json.append("    \"id\": ").append(fila[0]).append(",\n");
             json.append("    \"dni\": \"").append(fila[1]).append("\",\n");
@@ -220,15 +240,19 @@ public class AccesoTrabajador {
             json.append("    \"telefono\": \"").append(fila[5]).append("\",\n");
             json.append("    \"puesto\": \"").append(fila[6]).append("\"\n");
             json.append("  }");
+
             if (i < listaTrabajadores.size() - 1) {
                 json.append(",");
             }
+
             json.append("\n");
         }
+
         json.append("]");
 
         try (FileWriter writer = new FileWriter(rutaArchivo)) {
             writer.write(json.toString());
+
         } catch (IOException e) {
             throw new BDException("Error al exportar trabajadores a JSON: " + e.getMessage());
         }

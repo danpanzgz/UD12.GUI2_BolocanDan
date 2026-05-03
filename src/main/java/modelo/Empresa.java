@@ -38,7 +38,7 @@ public class Empresa {
 	/**
 	 * Devuelve la posici�n en la que se encuentra un trabajador
 	 * busc�ndolo por dni
-	 * @param t
+	 * @param codigo
 	 * @return
 	 */
 	public int devolverPosicion(int codigo){
@@ -51,31 +51,25 @@ public class Empresa {
 	}
 	
 	/**
-	 * Si el trabajador no est� en la lista, lo a�ade
 	 * @param t
 	 */
 	public boolean altaTrabajador(Trabajador t){
-		if(!esta(t)){
-			trabajadores.add(t);
-			return true;
-		}
-		else return false;
+		trabajadores.add(t);
+		return true;
 	}
+
 	/**
-	 * Da de baja un trabajador busc�ndolo por c�digo
-	 * @param t
+	 *
+	 * @param posicion
+	 * @return
 	 */
-	public boolean bajaTrabajador(int codigo){
-		int posicion = devolverPosicion(codigo);
-		if(posicion > -1){
-			trabajadores.remove(posicion);
-			return true;
-		}
-		else return false;
+	public boolean bajaTrabajador(int posicion){
+		trabajadores.remove(posicion);
+		return true;
 	}
 	/**
 	 * Devuelve un trabajador
-	 * @param dni
+	 * @param codigo
 	 * @return
 	 */
 	public Trabajador buscarTrabajador(int codigo){		
@@ -88,17 +82,18 @@ public class Empresa {
 	}
 	/**
 	 * Permite modificar el valor de los atributos de un objeto Trabajador
-	 * @param dni
+	 * @param posicion
 	 * @return
 	 */
-	public void modificarTrabajador(int codigo, String dni, String nombre, String apellidos, String direccion, String telefono, String puesto){
-		int posicion = devolverPosicion(codigo);
-		trabajadores.get(posicion).setDni(dni);
-		trabajadores.get(posicion).setNombre(nombre);
-		trabajadores.get(posicion).setApellidos(apellidos);
-		trabajadores.get(posicion).setDireccion(direccion);
-		trabajadores.get(posicion).setTelefono(telefono);
-		trabajadores.get(posicion).setPuesto(puesto);
+	public void modificarTrabajador(int posicion, String dni, String nombre, String apellidos, String direccion, String telefono, String puesto){
+		if (posicion != -1) {
+			trabajadores.get(posicion).setDni(dni);
+			trabajadores.get(posicion).setNombre(nombre);
+			trabajadores.get(posicion).setApellidos(apellidos);
+			trabajadores.get(posicion).setDireccion(direccion);
+			trabajadores.get(posicion).setTelefono(telefono);
+			trabajadores.get(posicion).setPuesto(puesto);
+		}
 	}
 	
 	/**

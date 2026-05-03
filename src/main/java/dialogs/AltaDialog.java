@@ -20,6 +20,8 @@ import javax.swing.JTextField;
 
 import modelo.Empresa;
 import modelo.Trabajador;
+import dao.AccesoTrabajador;
+import exceptions.BDException;
 
 /**
  * 
@@ -31,8 +33,6 @@ public class AltaDialog extends JDialog implements ActionListener, ItemListener 
 	/**
 	 * Elementos del JFrame
 	 */
-	JLabel etiquetaIdentificador;
-	JTextField areaIdentificador;
 	JLabel etiquetaDni;
 	JTextField areaDni;
 	JLabel etiquetaNombre;
@@ -50,7 +50,6 @@ public class AltaDialog extends JDialog implements ActionListener, ItemListener 
 	/**
 	 * Variables a las que se pasar� el contenido de los JTextField y del combo box
 	 */
-	int id = 0;
 	String dni = "";
 	String nombre = "";
 	String apellidos = "";
@@ -58,7 +57,6 @@ public class AltaDialog extends JDialog implements ActionListener, ItemListener 
 	String telefono = "";
 	String puesto = "";
 
-	JPanel pIdentificador;
 	JPanel pDni;
 	JPanel pNombre;
 	JPanel pApellidos;
@@ -80,7 +78,6 @@ public class AltaDialog extends JDialog implements ActionListener, ItemListener 
 		setLocationRelativeTo(null);
 
 		// una fila por JPanel
-		pIdentificador = new JPanel();
 		pDni = new JPanel();
 		pNombre = new JPanel();
 		pApellidos = new JPanel();
@@ -89,12 +86,7 @@ public class AltaDialog extends JDialog implements ActionListener, ItemListener 
 		pPuesto = new JPanel();
 		pBotones = new JPanel();
 
-		// Se crean los elementos y se añaden
-		etiquetaIdentificador = new JLabel("Identificador");
-		areaIdentificador = new JTextField(15);
-		// Se añaden al JPanel
-		pIdentificador.add(etiquetaIdentificador);
-		pIdentificador.add(areaIdentificador);
+
 
 		// Se crean los elementos y se añaden
 		etiquetaDni = new JLabel("DNI                 ");
@@ -145,7 +137,6 @@ public class AltaDialog extends JDialog implements ActionListener, ItemListener 
 		pPuesto.add(comboPuesto);
 
 		// Añadir al JDialog los JPanel
-		add(pIdentificador);
 		add(pDni);
 		add(pNombre);
 		add(pApellidos);
@@ -176,35 +167,60 @@ public class AltaDialog extends JDialog implements ActionListener, ItemListener 
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
+
 		if (e.getSource() == aceptar) {
 			try {
+				dni = areaDni.getText().trim();
+				nombre = areaNombre.getText().trim();
+				apellidos = areaApellidos.getText().trim();
+				direccion = areaDireccion.getText().trim();
+				telefono = areaTelefono.getText().trim();
+				puesto = comboPuesto.getSelectedItem().toString();
 
-				id = Integer.parseInt(areaIdentificador.getText());
-				dni = areaDni.getText();
-				nombre = areaNombre.getText();
-				apellidos = areaApellidos.getText();
-				direccion = areaDireccion.getText();
-				telefono = areaTelefono.getText();
 				if (comprobarErrores()) {
-					Trabajador t = new Trabajador(id, dni, nombre, apellidos, direccion, telefono, puesto);
-					if (empresa.altaTrabajador(t)) {
-						JOptionPane.showMessageDialog(null, "Datos introducidos correctamente");
+
+					Trabajador t = new Trabajador(
+							0,
+							dni,
+							nombre,
+							apellidos,
+							direccion,
+							telefono,
+							puesto
+					);
+
+					boolean insertado = AccesoTrabajador.altaTrabajador(t);
+
+					if (insertado) {
+						empresa.getTrabajadores().add(t);
+						JOptionPane.showMessageDialog(
+								null,
+								"Datos introducidos correctamente"
+						);
+						dispose();
+
 					} else {
-						JOptionPane.showMessageDialog(null, "El ID del trabajador que quiere introducir ya existe",
-								"Error", JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(
+								null,
+								"Ya existe un trabajador con ese DNI",
+								"Error",
+								JOptionPane.ERROR_MESSAGE
+						);
 					}
 				}
 
-			} catch (Exception e1) {
-				JOptionPane.showMessageDialog(null, "El ID debe ser un n�mero entero", "Error",
-						JOptionPane.ERROR_MESSAGE);
+			} catch (BDException ex) {
+				JOptionPane.showMessageDialog(
+						null,
+						ex.getMessage(),
+						"Error",
+						JOptionPane.ERROR_MESSAGE
+				);
 			}
 
 		} else if (e.getSource() == cancelar) {
 			dispose();
 		}
-
 	}
 
 	/**
@@ -214,34 +230,87 @@ public class AltaDialog extends JDialog implements ActionListener, ItemListener 
 	 * @return
 	 */
 	public boolean comprobarErrores() {
-		if (id < 1) {
-			JOptionPane.showMessageDialog(null, "El ID debe ser un n�mero entero positivo", "Error",
-					JOptionPane.ERROR_MESSAGE);
-			return false;
-		} else if (dni.equals("") || dni.length() != 9) {
-			JOptionPane.showMessageDialog(null, "El DNI debe tener longitud 9", "Error", JOptionPane.ERROR_MESSAGE);
-			return false;
-		} else if (nombre.equals("")) {
-			JOptionPane.showMessageDialog(null, "Debe introducir el nombre del trabajador", "Error",
-					JOptionPane.ERROR_MESSAGE);
-			return false;
-		} else if (apellidos.equals("")) {
-			JOptionPane.showMessageDialog(null, "Debe introducir los apellidos del trabajador", "Error",
-					JOptionPane.ERROR_MESSAGE);
-			return false;
-		} else if (direccion.equals("")) {
-			JOptionPane.showMessageDialog(null, "Debe introducir la direcci�n del trabajador", "Error",
-					JOptionPane.ERROR_MESSAGE);
-			return false;
-		} else if (telefono.equals("") || telefono.length() != 9) {
-			JOptionPane.showMessageDialog(null, "El tel�fono debe tener longitud 9", "Error",
-					JOptionPane.ERROR_MESSAGE);
-			return false;
-		} else if (puesto.equals("")) {
-			JOptionPane.showMessageDialog(null, "Debe introducir el puesto del trabajador", "Error",
-					JOptionPane.ERROR_MESSAGE);
+
+		if (dni.equals("")) {
+			JOptionPane.showMessageDialog(
+					null,
+					"Debe introducir el DNI",
+					"Error",
+					JOptionPane.ERROR_MESSAGE
+			);
 			return false;
 		}
+
+		if (!AccesoTrabajador.validarDNI(dni)) {
+			JOptionPane.showMessageDialog(
+					null,
+					"El DNI no es válido",
+					"Error",
+					JOptionPane.ERROR_MESSAGE
+			);
+			return false;
+		}
+
+		if (nombre.equals("")) {
+			JOptionPane.showMessageDialog(
+					null,
+					"Debe introducir el nombre",
+					"Error",
+					JOptionPane.ERROR_MESSAGE
+			);
+			return false;
+		}
+
+		if (apellidos.equals("")) {
+			JOptionPane.showMessageDialog(
+					null,
+					"Debe introducir los apellidos",
+					"Error",
+					JOptionPane.ERROR_MESSAGE
+			);
+			return false;
+		}
+
+		if (direccion.equals("")) {
+			JOptionPane.showMessageDialog(
+					null,
+					"Debe introducir la dirección",
+					"Error",
+					JOptionPane.ERROR_MESSAGE
+			);
+			return false;
+		}
+
+		if (telefono.equals("")) {
+			JOptionPane.showMessageDialog(
+					null,
+					"Debe introducir el teléfono",
+					"Error",
+					JOptionPane.ERROR_MESSAGE
+			);
+			return false;
+		}
+
+		if (!AccesoTrabajador.validarTelefono(telefono)) {
+			JOptionPane.showMessageDialog(
+					null,
+					"El teléfono no es válido",
+					"Error",
+					JOptionPane.ERROR_MESSAGE
+			);
+			return false;
+		}
+
+		if (comboPuesto.getSelectedIndex() == 0) {
+			JOptionPane.showMessageDialog(
+					null,
+					"Debe seleccionar un puesto",
+					"Error",
+					JOptionPane.ERROR_MESSAGE
+			);
+			return false;
+		}
+
 		return true;
 	}
 

@@ -53,6 +53,20 @@ public class BajaDialog extends JDialog implements ActionListener {
         setVisible(true);
     }
 
+    private void recargarTabla() {
+        try {
+            datos = AccesoTrabajador.listarTrabajadores();
+            tabla.setModel(
+                    new javax.swing.table.DefaultTableModel(datos, columnas)
+            );
+        } catch (BDException e) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al recargar la tabla"
+            );
+        }
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
 
@@ -86,6 +100,8 @@ public class BajaDialog extends JDialog implements ActionListener {
 
                     if (ok) {
                         JOptionPane.showMessageDialog(this, "Trabajador eliminado");
+                        recargarTabla();
+
                     } else {
                         JOptionPane.showMessageDialog(this, "No existe el trabajador");
                     }

@@ -73,18 +73,13 @@ public class EmpresaGUI extends JFrame implements ActionListener {
     }
 
     private void inicializarDatos() {
-        ArrayList<Trabajador> lista = FicheroDatos.obtenerTrabajadores("ficheroDatos\\empresa.dat");
+        ArrayList<Trabajador> lista =
+                FicheroDatos.obtenerTrabajadores("ficheroDatos\\empresa.dat");
 
         empresa = new Empresa(lista);
 
         try {
-            for (Trabajador t : lista) {
-                boolean insertado = AccesoTrabajador.altaTrabajador(t);
-
-                if (!insertado) {
-                    AccesoTrabajador.modificaTrabajador(t);
-                }
-            }
+            AccesoTrabajador.insertar(lista);
         } catch (BDException e) {
             e.printStackTrace();
         }
@@ -113,11 +108,35 @@ public class EmpresaGUI extends JFrame implements ActionListener {
             new ListarDialog(empresa);
         }
 
+
         if (e.getSource() == salir) {
-            FicheroDatos.escribirTrabajadores(
-                    "ficheroDatos\\empresa.dat",
-                    empresa.getTrabajadores()
-            );
+
+            try {
+                String[][] datos = AccesoTrabajador.listarTrabajadores();
+                ArrayList<Trabajador> listaActualizada = new ArrayList<>();
+
+                for (String[] fila : datos) {
+                    Trabajador t = new Trabajador(
+                            Integer.parseInt(fila[0]),
+                            fila[1],
+                            fila[2],
+                            fila[3],
+                            fila[4],
+                            fila[5],
+                            fila[6]
+                    );
+                    listaActualizada.add(t);
+                }
+
+                FicheroDatos.escribirTrabajadores(
+                        "ficheroDatos\\empresa.dat",
+                        listaActualizada
+                );
+
+            } catch (BDException ex) {
+                ex.printStackTrace();
+            }
+
             System.exit(0);
         }
     }

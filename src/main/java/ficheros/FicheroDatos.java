@@ -43,9 +43,10 @@ public class FicheroDatos {
             System.out.printf("Error al escribir en el fichero%n");
         } finally {
             try {
-                fichero.close();
+                if (fichero != null) {
+                    fichero.close();
+                }
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         }
