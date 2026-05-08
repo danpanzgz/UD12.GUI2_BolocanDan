@@ -13,6 +13,7 @@ import dao.AccesoTrabajador;
 import dialogs.AltaDialog;
 import dialogs.BajaDialog;
 import dialogs.ListarDialog;
+import dialogs.ModificarDialog;
 import exceptions.BDException;
 import ficheros.FicheroDatos;
 import modelo.Empresa;
@@ -30,7 +31,7 @@ public class EmpresaGUI extends JFrame implements ActionListener {
     JButton salir;
 
     public EmpresaGUI() {
-        super("Gestión de personal");
+        super("Gestion de personal");
 
         setSize(800, 750);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -39,7 +40,7 @@ public class EmpresaGUI extends JFrame implements ActionListener {
 
         inicializarDatos();
 
-        altaTrabajador = new JButton("Añadir Trabajador");
+        altaTrabajador = new JButton("Anadir Trabajador");
         altaTrabajador.addActionListener(this);
         altaTrabajador.setIcon(new ImageIcon("images/addUser.png"));
         add(altaTrabajador);
@@ -97,17 +98,16 @@ public class EmpresaGUI extends JFrame implements ActionListener {
         }
 
         if (e.getSource() == modificaTrabajador) {
-            // pendiente
+            new ModificarDialog(empresa);
         }
 
         if (e.getSource() == buscaTrabajador) {
-            // pendiente
+            new ListarDialog(empresa);
         }
 
         if (e.getSource() == listarTrabajadores) {
             new ListarDialog(empresa);
         }
-
 
         if (e.getSource() == salir) {
 

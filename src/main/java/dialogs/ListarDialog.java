@@ -1,56 +1,72 @@
-/**
- *
- */
 package dialogs;
-
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
-import javax.swing.JButton;
-import javax.swing.JDialog;
-
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
 
 import dao.AccesoTrabajador;
 import exceptions.BDException;
 import modelo.Empresa;
 
-/**
- *
- * @author usuario
- *
- */
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.regex.Pattern;
+
 public class ListarDialog extends JDialog implements ActionListener {
 
-    Empresa empresa;
-    JTable tabla;
-    JButton cerrar;
+    private static final String[] COLUMNAS = {"Identificador", "DNI", "Nombre", "Apellidos", "Direccion", "Telefono", "Puesto"};
+
+    private final Empresa empresa;
+    private JTable tabla;
+    private JButton cerrar;
+    private JButton filtrar;
+    private JButton limpiar;
+    private JTextField campoBuscar;
+    private DefaultTableModel modeloTabla;
+    private TableRowSorter<DefaultTableModel> sorter;
 
     public ListarDialog(Empresa empresa) {
         this.empresa = empresa;
 
         setResizable(false);
-        // t�tulo del di�log
         setTitle("Listado Trabajadores");
-        // tama�o
         setSize(750, 700);
         setLayout(new FlowLayout());
-        // colocaci�n en el centro de la pantalla
         setLocationRelativeTo(null);
+        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
-        // Crea un JTable, cada fila será un trabajador
-        String[] columnas = {"Identificador", "DNI", "Nombre", "Apellidos", "Direcci�n", "Tel�fono", "Puesto"};
-        String[][] datos = null;
-        try {
-            datos = AccesoTrabajador.listarTrabajadores();
-        } catch (BDException e) {
-            throw new RuntimeException(e);
-        }
-        tabla = new JTable(datos, columnas);
-        // Mete la tabla en un JCrollPane
+        JPanel panelFiltro = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        panelFiltro.add(new JLabel("Buscar"));
+
+        campoBuscar = new JTextField(20);
+        panelFiltro.add(campoBuscar);
+
+        filtrar = new JButton("Filtrar");
+        filtrar.setActionCommand("FILTRAR");
+        filtrar.addActionListener(this);
+        panelFiltro.add(filtrar);
+
+        limpiar = new JButton("Limpiar");
+        limpiar.setActionCommand("LIMPIAR");
+        limpiar.addActionListener(this);
+        panelFiltro.add(limpiar);
+
+        add(panelFiltro);
+
+        modeloTabla = new DefaultTableModel(new Object[0][0], COLUMNAS) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        tabla = new JTable(modeloTabla);
+        tabla.setAutoCreateRowSorter(true);
+        sorter = new TableRowSorter<>(modeloTabla);
+        tabla.setRowSorter(sorter);
+
+        recargarTabla();
+
         JScrollPane jsp = new JScrollPane(tabla);
         jsp.setPreferredSize(new Dimension(700, 600));
         add(jsp);
@@ -62,12 +78,51 @@ public class ListarDialog extends JDialog implements ActionListener {
         setVisible(true);
     }
 
+    private void recargarTabla() {
+        try {
+            String[][] datos = AccesoTrabajador.listarTrabajadores();
+            modeloTabla.setRowCount(0);
+
+            for (String[] fila : datos) {
+                modeloTabla.addRow(fila);
+            }
+
+        } catch (BDException e) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    private void aplicarFiltro() {
+        String texto = campoBuscar.getText().trim();
+
+        if (texto.isEmpty()) {
+            sorter.setRowFilter(null);
+            return;
+        }
+
+        sorter.setRowFilter(RowFilter.regexFilter("(?i)" + Pattern.quote(texto)));
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
-        // TODO Auto-generated method stub
+        if ("FILTRAR".equals(e.getActionCommand())) {
+            aplicarFiltro();
+            return;
+        }
+
+        if ("LIMPIAR".equals(e.getActionCommand())) {
+            campoBuscar.setText("");
+            sorter.setRowFilter(null);
+            return;
+        }
+
         if (e.getSource() == cerrar) {
             dispose();
         }
     }
-
 }
